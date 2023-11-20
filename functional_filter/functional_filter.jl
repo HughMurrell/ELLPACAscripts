@@ -74,7 +74,8 @@ end
 Julia wrapper for mafft.
 """
 function my_mafft(inpath, outpath)
-    cmd = `mafft-fftns --quiet --thread 2 --ep 2 --op 3 --out $outpath $inpath`
+    # cmd = `mafft-fftns --quiet --thread 2 --ep 2 --op 3 --out $outpath $inpath`
+    cmd = `mafft --quiet --thread 2 --ep 2 --op 3 --out $outpath $inpath`
     println(cmd)
     run(cmd)
 end

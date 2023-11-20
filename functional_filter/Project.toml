@@ -1,0 +1,14 @@
+name = "ELLPACAscripts"
+authors = ["Hugh Murrell <hugh.murrell@gmail.com>"]
+version = "1.8.0"
+
+[deps]
+CSV = "336ed68f-0bac-5ca0-87d4-7b16caf5d00b"
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+FASTX = "c2308a5c-f048-11e8-3e8a-31650f418d12"
+NextGenSeqUtils = "59ec5594-ae11-5d8d-a868-831a7e904d88"
+SplitApplyCombine = "03a91e81-4c3e-53e1-a0a4-9c0c8f19dd66"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
+
+[compat]
+julia = "1.8"

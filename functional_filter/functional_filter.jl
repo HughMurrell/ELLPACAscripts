@@ -148,7 +148,7 @@ function get_matching_region_for_consensus(ref, cons)
     cons_aa_trim = cons_aa[start:stop]
     cons_trim = cons[((start-1)*3+reading_frame):((stop)*3+reading_frame-1)]
     # println(cons_aa_trim)
-    return cons_trim, cons_aa_trim
+    return cons_trim, cons_aa_trim, start, stop
 end
                         
 
@@ -223,17 +223,17 @@ function extract_ref_match(ref_file, donor, seq_files ; house_keeping = nothing 
     
     # set the output path names
     faa=mkpath("data_out/functional_aa/")
-    out_seq_aa = faa*"/"*donor*"_aa_sequences.fasta"
+    out_seq_aa = faa*"/"*donor*"_functional_aa.fasta"
     faa_ali=mkpath("data_out/functional_aa_ali/")
-    out_ali_aa = faa_ali*"/"*donor*"_aa_alignment.fasta"
+    out_ali_aa = faa_ali*"/"*donor*"_functional_aa_ali.fasta"
     fnu=mkpath("data_out/functional_nu/")
-    out_seq_nu = fnu*"/"*donor*"_nu_ca_sequences.fasta"
+    out_seq_nu = fnu*"/"*donor*"_functional_nu.fasta"
     fnu_ali=mkpath("data_out/functional_nu_ali/")
-    out_ali_nu = fnu_ali*"/"*donor*"_nu_ca_alignment.fasta"
+    out_ali_nu = fnu_ali*"/"*donor*"_functional_nu_ali.fasta"
     nfaa=mkpath("data_out/non_functional_aa/")
-    nf_out_seq_aa = nfaa*"/"*donor*"_aa_sequences_non_functional_rejects.fasta"
+    nf_out_seq_aa = nfaa*"/"*donor*"_non_functional_aa.fasta"
     nfnu=mkpath("data_out/non_functional_nu/")
-    nf_out_seq_nu = nfnu*"/"*donor*"_nu_ca_sequences_non_functional_rejects.fasta"
+    nf_out_seq_nu = nfnu*"/"*donor*"_non_functional_nu.fasta"
     
     # first read and translate reference file
     println("processing ref and sequence files using NextGenSeqUtils...")
@@ -252,13 +252,26 @@ function extract_ref_match(ref_file, donor, seq_files ; house_keeping = nothing 
     
     # get consensus of first sequence file and prepare a pannel sequence
     file = seq_files[1]
-    println("processing first sequence file with name $(basename(file)) ...")
+    println("processing first visit with name $(basename(file)) ...")
     ns, ss = read_fasta_with_names_and_descriptions(file)
     cons = uppercase(degap(consensus(ss)))
     println("length of reference = $(length(sr[1]))")
     println("length of consensus = $(length(cons))")
     #cons, cons_aa = get_matching_region(sr[1], cons, size=9, tol=1, is_cons=true)
-    cons, cons_aa = get_matching_region_for_consensus(sr[1], cons)
+    cons, cons_aa, start, stop = get_matching_region_for_consensus(sr[1], cons)
+    println("length of first visit consensus = $(length(cons))")
+    println("matching region for first visit starts at $(start) and ends at $(stop)")
+    # if start is less than 100 then try again with second visit
+    if start >= 100 && length(seq_files) > 1
+        file = seq_files[2]
+        println("first visit consensus no good, processing second visit with name $(basename(file)) ...")
+        ns, ss = read_fasta_with_names_and_descriptions(file)
+        cons = uppercase(degap(consensus(ss)))
+        println("length of reference = $(length(sr[1]))")
+        println("length of second visit consensus = $(length(cons))")
+        cons, cons_aa, start, stop = get_matching_region_for_consensus(sr[1], cons)
+        println("matching region for second visit starts at $(start) and ends at $(stop)")
+    end
     # println(cons)
     # println(cons_aa)
     stops = findall((x->x=='*').(collect(cons_aa)))
@@ -274,10 +287,10 @@ function extract_ref_match(ref_file, donor, seq_files ; house_keeping = nothing 
     end
     println("consensus generated and coding region extracted...")
     my_write_fasta(out_seq_aa,[cons_aa],
-        names=["consensus_of_first_sample"], aa=true,append=true)
+        names=["consensus_of_$(basename(file))"], aa=true,append=true)
     # also write the nucs for later use
     my_write_fasta(out_seq_nu,[degap(cons)],
-        names=["consensus_of_first_sample"], aa=false, append=true)
+        names=["consensus_of_$(basename(file))"], aa=false, append=true)
 
     # now read all sequences and extract reading frames by aligning to cons
     # println("now extracting coding regions from seqs by comparing to consensus...")
@@ -400,7 +413,7 @@ end
 println("using Julia version: $(VERSION)")
 t1 = time()
 num_of_pools=4
-pool_dirs=["../../../porpidpostproc_ellp/postproc/pool$(i)_" for i in 1:num_of_pools]
+pool_dirs=["../../porpidpostproc_ellp/postproc/pool$(i)_" for i in 1:num_of_pools]
 for i in 1:num_of_pools
     if i<3
         pool_dirs[i] *= "nicd"
@@ -431,7 +444,7 @@ donors=sort(union(donors))
 # println(donors)
 println("Number of donors = $(length(donors))")
 
-fr="../../../porpidpostproc_ellp/panels/hxb2-env.fasta"
+fr="../../porpidpostproc_ellp/panels/hxb2-env.fasta"
 println(" doing codon aware alignment against reference in $(fr) ...")
 
 hk=DataFrame(donor=[],visit=[],pool=[],functional=[],non_functional=[],
